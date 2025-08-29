@@ -990,41 +990,47 @@
             finishBtn.textContent = 'Uploading...';
             
             try {
-                // Show the finish modal with the drawing
-                const dataUrl = canvas.toDataURL();
-                document.getElementById('finishImage').src = dataUrl;
-                document.getElementById('finishName').textContent = woflName;
-                document.getElementById('finishModal').classList.add('active');
-                
                 canvas.toBlob(async (blob) => {
-                    // Generate unique ID
-                    const woflId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-                    
-                    // Upload image to Firebase Storage
-                    const storageRef = storage.ref(`wofls/${woflId}.png`);
-                    const uploadTask = await storageRef.put(blob);
-                    const imageUrl = await uploadTask.ref.getDownloadURL();
-                    
-                    // Save metadata to Firestore
-                    await db.collection('wofls').doc(woflId).set({
-                        id: woflId,
-                        name: woflName,
-                        imageUrl: imageUrl,
-                        creatorId: auth.currentUser ? auth.currentUser.uid : 'anonymous',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        createdAt: new Date().toISOString()
-                    });
-                    
-                    finishBtn.disabled = false;
-                    finishBtn.textContent = 'Finish & Share';
-                    
+                    try {
+                        // Generate unique ID
+                        const woflId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                        
+                        // Upload image to Firebase Storage
+                        const storageRef = storage.ref(`wofls/${woflId}.png`);
+                        const uploadTask = await storageRef.put(blob);
+                        const imageUrl = await uploadTask.ref.getDownloadURL();
+                        
+                        // Save metadata to Firestore
+                        await db.collection('wofls').doc(woflId).set({
+                            id: woflId,
+                            name: woflName,
+                            imageUrl: imageUrl,
+                            creatorId: auth.currentUser ? auth.currentUser.uid : 'anonymous',
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            createdAt: new Date().toISOString()
+                        });
+                        
+                        // NOW show the modal after everything is saved successfully
+                        const dataUrl = canvas.toDataURL();
+                        document.getElementById('finishImage').src = dataUrl;
+                        document.getElementById('finishName').textContent = woflName;
+                        document.getElementById('finishModal').classList.add('active');
+                        
+                        finishBtn.disabled = false;
+                        finishBtn.textContent = 'Finish & Share';
+                        
+                    } catch (error) {
+                        console.error('Error during upload:', error);
+                        alert('Failed to upload. Error: ' + error.message);
+                        finishBtn.disabled = false;
+                        finishBtn.textContent = 'Finish & Share';
+                    }
                 }, 'image/png');
             } catch (error) {
-                console.error('Error uploading Wofl:', error);
-                alert('Failed to upload. Please try again.');
+                console.error('Error creating blob:', error);
+                alert('Failed to process image. Please try again.');
                 finishBtn.disabled = false;
                 finishBtn.textContent = 'Finish & Share';
-                document.getElementById('finishModal').classList.remove('active');
             }
         }
 
