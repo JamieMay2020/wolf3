@@ -142,15 +142,18 @@
             display: flex;
             gap: 20px;
             margin-top: 20px;
+            justify-content: center;
         }
 
         .canvas-container {
-            flex: 1;
             border: 2px solid;
             border-color: #808080 #ffffff #ffffff #808080;
             background-color: #ffffff;
             padding: 2px;
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #drawingCanvas {
@@ -158,9 +161,8 @@
             cursor: crosshair;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
-            width: 100%;
-            max-width: 400px;
-            height: auto;
+            width: 400px;
+            height: 400px;
         }
 
         .tools-panel {
@@ -551,14 +553,15 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     
     <script>
-        // Firebase configuration - You'll need to replace with your config
+        // Firebase configuration
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAUJ4jMb0wF6RVJNY9tpWvuF5lRKT6KCZ4",
+            authDomain: "wofl-f492e.firebaseapp.com",
+            projectId: "wofl-f492e",
+            storageBucket: "wofl-f492e.firebasestorage.app",
+            messagingSenderId: "81985884873",
+            appId: "1:81985884873:web:ceb350157044e54d583318",
+            measurementId: "G-EQ8YHTCRTF"
         };
         
         // Initialize Firebase
@@ -646,17 +649,15 @@
                         <span class="tool-label">Tools:</span>
                         <div class="tool-buttons">
                             <button class="tool-btn active" id="pencilTool">Pencil</button>
-                            <button class="tool-btn" id="eraserTool">Eraser</button>
                         </div>
                     </div>
                     
                     <div class="action-buttons">
                         <button class="action-btn" id="clearBtn">Clear</button>
-                        <button class="action-btn" id="undoBtn">Undo</button>
+                        <button class="action-btn" id="copyBtn">Copy</button>
                     </div>
                     
                     <div class="action-buttons">
-                        <button class="action-btn" id="copyBtn">Copy</button>
                         <button class="action-btn" id="finishBtn" style="background-color: #00ff00;">Finish & Share</button>
                     </div>
                 </div>
@@ -738,9 +739,10 @@
         let isDrawing = false;
         let currentColor = '#000000';
         let currentSize = 3;
-        let currentTool = 'pencil';
         let drawingHistory = [];
+        let currentPath = [];
         let baseImageLoaded = false;
+        let baseImageSrc = null;
 
         // Initialize canvas
         document.addEventListener('DOMContentLoaded', () => {
@@ -756,26 +758,26 @@
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Load base image if you have one
-            // Upload your base image to Firebase Storage or any image host
-            // and replace the URL below
+            // Load base image from base64 data
             const baseImage = new Image();
-            baseImage.crossOrigin = "anonymous"; // For CORS
             baseImage.onload = function() {
-                // Clear canvas first
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw the base image centered
-                const x = (canvas.width - baseImage.width) / 2;
-                const y = (canvas.height - baseImage.height) / 2;
-                ctx.drawImage(baseImage, x, y);
-                baseImageLoaded = true;
+                drawBaseImage();
                 saveCanvasState();
             };
-            // REPLACE THIS URL WITH YOUR BASE IMAGE URL
-            // You can upload to Firebase Storage or use any image hosting service
-            // baseImage.src = 'https://your-firebase-storage-url/base-wofl.png';
+            
+            // PASTE YOUR BASE64 IMAGE HERE
+            // To convert your image to base64:
+            // 1. Go to https://www.base64-image.de/ or similar tool
+            // 2. Upload your image
+            // 3. Copy the entire data URL (starts with data:image/png;base64,...)
+            // 4. Replace the empty string below with your base64 data
+            
+            // baseImage.src = 'data:image/png;base64,YOUR_BASE64_STRING_HERE';
+            baseImageSrc = baseImage.src; // Store for reuse
+            
+            // Example (uncomment and replace with your actual base64):
+             baseImage.src = 'base.png';
+             baseImageSrc = baseImage.src;
             
             // Mouse events
             canvas.addEventListener('mousedown', startDrawing);
@@ -788,7 +790,45 @@
             canvas.addEventListener('touchmove', handleTouch);
             canvas.addEventListener('touchend', stopDrawing);
             
-            saveCanvasState();
+            // If no base image, just save the white canvas
+            if (!baseImage.src) {
+                saveCanvasState();
+            }
+        }
+        
+        function drawBaseImage(callback) {
+            if (!baseImageSrc) {
+                if (callback) callback();
+                return;
+            }
+            
+            const baseImage = new Image();
+            baseImage.onload = function() {
+                // Clear canvas first
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Calculate scaling to fit image within canvas
+                const scale = Math.min(
+                    canvas.width / baseImage.width,
+                    canvas.height / baseImage.height
+                );
+                
+                // Calculate new dimensions
+                const newWidth = baseImage.width * scale;
+                const newHeight = baseImage.height * scale;
+                
+                // Center the image
+                const x = (canvas.width - newWidth) / 2;
+                const y = (canvas.height - newHeight) / 2;
+                
+                // Draw the scaled image
+                ctx.drawImage(baseImage, x, y, newWidth, newHeight);
+                baseImageLoaded = true;
+                
+                if (callback) callback();
+            };
+            baseImage.src = baseImageSrc;
         }
 
         function setupDrawingTools() {
@@ -799,9 +839,6 @@
                     colorBoxes.forEach(b => b.classList.remove('selected'));
                     box.classList.add('selected');
                     currentColor = box.dataset.color;
-                    currentTool = 'pencil';
-                    document.getElementById('pencilTool').classList.add('active');
-                    document.getElementById('eraserTool').classList.remove('active');
                 });
             });
             
@@ -814,63 +851,45 @@
                 brushPreview.style.height = currentSize + 'px';
             });
             
-            // Tools
-            document.getElementById('pencilTool').addEventListener('click', () => {
-                currentTool = 'pencil';
-                document.getElementById('pencilTool').classList.add('active');
-                document.getElementById('eraserTool').classList.remove('active');
-            });
-            
-            document.getElementById('eraserTool').addEventListener('click', () => {
-                currentTool = 'eraser';
-                document.getElementById('eraserTool').classList.add('active');
-                document.getElementById('pencilTool').classList.remove('active');
-            });
-            
             // Actions
             document.getElementById('clearBtn').addEventListener('click', clearCanvas);
-            document.getElementById('undoBtn').addEventListener('click', undo);
             document.getElementById('copyBtn').addEventListener('click', copyImage);
             document.getElementById('finishBtn').addEventListener('click', finishAndShare);
         }
 
         function startDrawing(e) {
             isDrawing = true;
+            currentPath = [];
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
             ctx.beginPath();
             ctx.moveTo(x, y);
+            currentPath.push({x, y, color: currentColor, size: currentSize});
         }
 
         function draw(e) {
             if (!isDrawing) return;
-            
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
+
             ctx.lineWidth = currentSize;
+            ctx.strokeStyle = currentColor;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            
-            if (currentTool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.strokeStyle = currentColor;
-            }
-            
             ctx.lineTo(x, y);
             ctx.stroke();
+
+            currentPath.push({x, y, color: currentColor, size: currentSize});
         }
 
         function stopDrawing() {
-            if (isDrawing) {
-                isDrawing = false;
-                saveCanvasState();
+            if (isDrawing && currentPath.length > 0) {
+                drawingHistory.push([...currentPath]);
+                currentPath = [];
             }
+            isDrawing = false;
         }
 
         function handleTouch(e) {
@@ -892,23 +911,49 @@
         }
 
         function clearCanvas() {
-            if (confirm('Clear the canvas?')) {
+            if (confirm('Clear your drawing?')) {
+                // Reset to just base image
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                drawingHistory = [];
-                saveCanvasState();
+                
+                if (baseImageSrc) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const scale = Math.min(
+                            canvas.width / img.width,
+                            canvas.height / img.height
+                        );
+                        const newWidth = img.width * scale;
+                        const newHeight = img.height * scale;
+                        const x = (canvas.width - newWidth) / 2;
+                        const y = (canvas.height - newHeight) / 2;
+                        ctx.drawImage(img, x, y, newWidth, newHeight);
+                        
+                        // Keep only the base image in history
+                        drawingHistory = [canvas.toDataURL()];
+                    };
+                    img.src = baseImageSrc;
+                } else {
+                    // No base image, just clear to white
+                    drawingHistory = [canvas.toDataURL()];
+                }
             }
         }
 
         function undo() {
+            // Only undo if we have more than just the base state
             if (drawingHistory.length > 1) {
+                // Remove current state
                 drawingHistory.pop();
+                
+                // Restore previous state
+                const previousState = drawingHistory[drawingHistory.length - 1];
                 const img = new Image();
                 img.onload = function() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, 0, 0);
                 };
-                img.src = drawingHistory[drawingHistory.length - 1];
+                img.src = previousState;
             }
         }
 
@@ -991,98 +1036,139 @@
         }
 
         // Original gallery code
-        const imageArray = [
-            "1.png",
-            "2.png",
-            "3.png",
-            "4.png",
-            "5.png",
-            "6.png",
-            "7.png",
-            "8.png",
-            "9.png",
-            "10.png",
-            "11.png",
-            "12.png",
-            "13.png",
-            "14.png",
-            "15.png",
-            "16.png",
-            "17.png",
-            "18.png",
-            "19.png",
-            "20.png",
-            "21.png",
-            "22.png",
-            "23.png",
-            "24.png",
-            "25.png",
-            "26.png",
-            "27.png",
-            "28.png",
-            "29.png",
-            "30.png",
-            "31.png",
-            "32.png",
-            "33.png",
-            "34.png",
-            "35.png",
-            "36.png",
-            "37.png",
-            "38.png",
-            "39.png",
-            "40.png",
-            "41.png",
-            "42.png",
-            "43.png",
-            "44.png",
-            "45.png",
-            "46.png",
-            "47.png",
-            "48.png",
-            "49.png",
-            "50.png",
-            "51.png",
-            "52.png",
-            "53.png",
-            "54.png",
-            "55.png",
-            "56.png",
-            "57.png",
-            "58.png",
-            "59.png",
-            "60.png",
-            "61.png",
-            "62.png",
-            "63.png",
-            "64.png",
-            "65.png",
-            "66.png",
-            "67.png",
-            "68.png",
-            "69.png",
-            "70.png",
-            "71.png",
-            "72.png",
-            "73.png",
-            "74.png",
-            "75.png",
-            "76.png",
-            "77.png",
-            "78.png",
-            "79.png",
-            "80.png",
-            "81.png",
-            "82.png",
-            "83.png",
-            "84.png",
-            "85.png",
-            "86.png",
-            "87.png",
-            "88.png",
-            "89.png",
-            "90.png",
-        ];
+const imageArray = [
+    "100.png",
+    "101.png",
+    "102.png",
+    "103.png",
+    "104.png",
+    "105.png",
+    "106.png",
+    "107.png",
+    "108.png",
+    "109.png",
+    "110.png",
+    "111.png",
+    "112.png",
+    "113.png",
+    "114.png",
+    "115.png",
+    "116.png",
+    "117.png",
+    "118.png",
+    "119.png",
+    "120.png",
+    "121.png",
+    "122.png",
+    "123.png",
+    "124.png",
+    "125.png",
+    "126.png",
+    "127.png",
+    "128.png",
+    "129.png",
+    "130.png",
+    "131.png",
+    "132.png",
+    "133.png",
+    "134.png",
+    "135.png",
+    "136.png",
+    "137.png",
+    "138.png",
+    "139.png",
+    "140.png",
+    "141.png",
+    "142.png",
+    "143.png",
+    "144.png",
+    "145.png",
+    "146.png",
+    "147.png",
+    "148.png",
+    "149.png",
+    "150.png",
+    "151.png",
+    "152.png",
+    "153.png",
+    "154.png",
+    "155.png",
+    "156.png",
+    "157.png",
+    "158.png",
+    "159.png",
+    "160.png",
+    "161.png",
+    "162.png",
+    "163.png",
+    "164.png",
+    "165.png",
+    "166.png",
+    "167.png",
+    "168.png",
+    "169.png",
+    "170.png",
+    "171.png",
+    "172.png",
+    "173.png",
+    "174.png",
+    "175.png",
+    "176.png",
+    "177.png",
+    "178.png",
+    "179.png",
+    "180.png",
+    "181.png",
+    "182.png",
+    "183.png",
+    "184.png",
+    "185.png",
+    "186.png",
+    "187.png",
+    "188.png",
+    "189.png",
+    "190.png",
+    "191.png",
+    "192.png",
+    "193.png",
+    "194.png",
+    "195.png",
+    "196.png",
+    "197.png",
+    "198.png",
+    "199.png",
+    "200.png",
+    "201.png",
+    "202.png",
+    "203.png",
+    "204.png",
+    "205.png",
+    "206.png",
+    "207.png",
+    "208.png",
+    "209.png",
+    "210.png",
+    "211.png",
+    "212.png",
+    "213.png",
+    "214.png",
+    "215.png",
+    "216.png",
+    "217.png",
+    "218.png",
+    "219.png",
+    "220.png",
+    "221.png",
+    "222.png",
+    "223.png",
+    "224.png",
+    "225.png",
+    "226.png",
+    "227.png",
+    "228.png",
+    "229.png",
+    "230.png",
+];
 
         const gallery = document.getElementById('gallery');
         const lightbox = document.getElementById('lightbox');
