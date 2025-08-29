@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Wofls</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'MS Sans Serif', 'Tahoma', sans-serif;
+            background-color: #ffffff;
+            background-image: 
+                repeating-linear-gradient(0deg, #c0c0c0 0px, #c0c0c0 1px, transparent 1px, transparent 8px),
+                repeating-linear-gradient(90deg, #c0c0c0 0px, #c0c0c0 1px, transparent 1px, transparent 8px);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Windows style boxes */
+        .window-box {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 2px;
+            margin: 20px 0;
+            box-shadow: 1px 1px 0 #000000;
+        }
+
+        .window-inner {
+            background-color: #ffffff;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 20px;
+        }
+
+        /* Title bar */
+        .title-bar {
+            background: linear-gradient(to right, #000080, #1084d0);
+            color: #ffffff;
+            padding: 3px 5px;
+            margin: -20px -20px 15px -20px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title-buttons {
+            display: flex;
+            gap: 2px;
+        }
+
+        .title-button {
+            width: 16px;
+            height: 14px;
+            background-color: #c0c0c0;
+            border: 1px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            font-size: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Header */
+        h1 {
+            font-size: 36px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Tahoma', sans-serif;
+            font-weight: bold;
+            color: #000080;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-link {
+            color: #0000ff;
+            text-decoration: underline;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+
+        .nav-link:hover {
+            color: #ff0000;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            background-color: #f0f0f0;
+            border: 1px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: inline-block;
+            margin: 0 15px;
+            color: #000080;
+            font-weight: bold;
+        }
+
+        /* Status indicator */
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+            background-color: #00ff00;
+        }
+
+        .status-indicator.offline {
+            background-color: #ff0000;
+        }
+
+        /* Community gallery */
+        .community-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .wofl-card {
+            background-color: #ffffff;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 8px;
+            text-align: center;
+            position: relative;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .wofl-card:hover {
+            border-color: #0000ff;
+        }
+
+        .wofl-image {
+            width: 100%;
+            height: 160px;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-color: #f9f9f9;
+            border: 1px solid #c0c0c0;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .wofl-info {
+            font-size: 11px;
+            color: #000000;
+        }
+
+        .wofl-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #000080;
+        }
+
+        .wofl-date {
+            color: #808080;
+            font-size: 10px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #808080;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+        }
+
+        /* Modal for image view */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            padding: 2px;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+
+        .modal-inner {
+            background-color: #ffffff;
+            border: 2px solid;
+            border-color: #808080 #ffffff #ffffff #808080;
+            padding: 10px;
+        }
+
+        .modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background-color: #c0c0c0;
+            border: 2px solid;
+            border-color: #ffffff #808080 #808080 #ffffff;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Loading indicator */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #808080;
+            font-size: 12px;
+        }
+    </style>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Firebase configuration - You'll need to replace with your config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        const auth = firebase.auth();
+        
+        // Sign in anonymously
+        auth.signInAnonymously();
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <div class="window-box">
+        <div class="window-inner">
+            <div class="title-bar">
+                <span>community.exe</span>
+                <div class="title-buttons">
+                    <div class="title-button">_</div>
+                    <div class="title-button">□</div>
+                    <div class="title-button">×</div>
+                </div>
+            </div>
+            <h1>Community Wofls</h1>
+            <div class="nav-bar">
+                <a href="index.html" class="nav-link">← Back to Main</a>
+                <span style="margin: 0 10px;">|</span>
+                <span style="font-size: 11px;">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">Live</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="window-box">
+        <div class="window-inner">
+            <div class="stats-bar">
+                <span class="stat-item">Total Wofls: <span id="totalCount">0</span></span>
+                <span class="stat-item">Today: <span id="todayCount">0</span></span>
+                <span class="stat-item">This Hour: <span id="hourCount">0</span></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="window-box">
+        <div class="window-inner">
+            <div id="loadingIndicator" class="loading">Loading community Wofls...</div>
+            
+            <div id="communityGallery" class="community-gallery" style="display: none;">
+                <!-- Community wofls will appear here -->
+            </div>
+            
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <h3>No Community Wofls Yet</h3>
+                <p>Be the first to share your creation!</p>
+                <p>Draw a Wofl on the main page and click "Finish & Share".</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-inner">
+                <img id="modalImage" class="modal-image" src="" alt="">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let communityWofls = [];
+        let unsubscribe = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            setupRealtimeListener();
+        });
+
+        // Setup real-time listener for Firebase
+        function setupRealtimeListener() {
+            // Listen to changes in the wofls collection
+            unsubscribe = db.collection('wofls')
+                .orderBy('timestamp', 'desc')
+                .limit(100) // Limit to last 100 wofls
+                .onSnapshot((snapshot) => {
+                    communityWofls = [];
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        communityWofls.push({
+                            id: doc.id,
+                            ...data
+                        });
+                    });
+                    
+                    displayGallery();
+                    updateStats();
+                    
+                    // Hide loading indicator
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                }, (error) => {
+                    console.error('Error listening to wofls:', error);
+                    document.getElementById('statusIndicator').classList.add('offline');
+                    document.getElementById('statusText').textContent = 'Offline';
+                });
+        }
+
+        // Display gallery
+        function displayGallery() {
+            const gallery = document.getElementById('communityGallery');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (communityWofls.length === 0) {
+                gallery.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            gallery.style.display = 'grid';
+            emptyState.style.display = 'none';
+            gallery.innerHTML = '';
+            
+            communityWofls.forEach(wofl => {
+                const card = createWoflCard(wofl);
+                gallery.appendChild(card);
+            });
+        }
+
+        // Create wofl card
+        function createWoflCard(wofl) {
+            const card = document.createElement('div');
+            card.className = 'wofl-card';
+            
+            // Format date
+            let dateStr = 'Just now';
+            if (wofl.timestamp) {
+                const date = wofl.timestamp.toDate ? wofl.timestamp.toDate() : new Date(wofl.createdAt);
+                const now = new Date();
+                const diff = now - date;
+                
+                if (diff < 60000) {
+                    dateStr = 'Just now';
+                } else if (diff < 3600000) {
+                    dateStr = Math.floor(diff / 60000) + ' min ago';
+                } else if (diff < 86400000) {
+                    dateStr = Math.floor(diff / 3600000) + ' hours ago';
+                } else {
+                    dateStr = date.toLocaleDateString();
+                }
+            }
+            
+            card.innerHTML = `
+                <img src="${wofl.imageUrl}" alt="${wofl.name}" class="wofl-image" onclick="openModal('${wofl.id}')">
+                <div class="wofl-info">
+                    <div class="wofl-name">${wofl.name}</div>
+                    <div class="wofl-date">${dateStr}</div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Open modal
+        function openModal(id) {
+            const wofl = communityWofls.find(w => w.id === id);
+            if (wofl) {
+                document.getElementById('modalImage').src = wofl.imageUrl;
+                document.getElementById('imageModal').classList.add('active');
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+
+        // Update statistics
+        function updateStats() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            
+            let todayCount = 0;
+            let hourCount = 0;
+            
+            communityWofls.forEach(wofl => {
+                const woflDate = wofl.timestamp ? 
+                    (wofl.timestamp.toDate ? wofl.timestamp.toDate() : new Date(wofl.createdAt)) : 
+                    new Date();
+                
+                if (woflDate >= today) todayCount++;
+                if (woflDate >= hourAgo) hourCount++;
+            });
+            
+            document.getElementById('totalCount').textContent = communityWofls.length;
+            document.getElementById('todayCount').textContent = todayCount;
+            document.getElementById('hourCount').textContent = hourCount;
+        }
+
+        // Modal click outside to close
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        });
+    </script>
+</body>
+</html>
